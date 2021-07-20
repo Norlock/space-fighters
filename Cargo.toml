@@ -1,0 +1,12 @@
+[package]
+name = "space-fighters"
+version = "0.1.0"
+authors = ["norlock <jwillems25@hotmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bevy = "0.5"
+rand = "0.8"
+
