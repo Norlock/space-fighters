@@ -1,6 +1,6 @@
 use crate::{
-    ActiveEnemies, Enemy, EnemyLaser, Materials, PlayerState, Speed, WinSize, HORIZONTAL_MARGIN,
-    MAX_ENEMIES, SCALE, TIME_STEP,
+    ActiveEnemies, AppState, Enemy, EnemyLaser, Materials, PlayerState, Speed, WinSize,
+    HORIZONTAL_MARGIN, MAX_ENEMIES, SCALE, TIME_STEP,
 };
 use bevy::{core::FixedTimestep, prelude::*};
 
@@ -9,12 +9,12 @@ pub struct EnemyPlugin;
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut bevy::prelude::AppBuilder) {
         app.add_system_set(
-            SystemSet::new()
+            SystemSet::on_update(AppState::InGame)
                 .with_run_criteria(FixedTimestep::step(1.0))
                 .with_system(enemy_spawn.system()),
         )
         .add_system_set(
-            SystemSet::new()
+            SystemSet::on_update(AppState::InGame)
                 .with_run_criteria(FixedTimestep::step(0.9))
                 .with_system(enemy_fire.system()),
         )

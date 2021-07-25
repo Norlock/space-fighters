@@ -18,6 +18,14 @@ const PLAYER_RESPAWN_DELAY: f64 = 2.;
 const MAX_ENEMIES: u32 = 20;
 const HORIZONTAL_MARGIN: f32 = 50.;
 
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+enum AppState {
+    MainMenu,
+    InGame,
+    Paused,
+    Gameover,
+}
+
 // Entity, Component, System, Resource
 
 // region:    Resources
@@ -39,6 +47,9 @@ struct WinSize {
 
 // region:    Components
 struct ActiveEnemies(u32);
+struct LivesLeft(u32);
+struct EnemiesLeft(u32);
+
 struct PlayerState {
     on: bool,
     last_shot: f64,
@@ -76,6 +87,10 @@ struct Enemy;
 struct Explosion;
 struct ExplosionToSpawn(Vec3);
 
+// Text labels
+struct LivesLeftText;
+struct EnemiesLeftText;
+
 struct Speed(f32);
 impl Default for Speed {
     fn default() -> Self {
@@ -86,6 +101,7 @@ impl Default for Speed {
 
 fn main() {
     App::build()
+        .add_state(AppState::InGame)
         .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
         .insert_resource(WindowDescriptor {
             title: "Space Fighters!".to_string(),
@@ -94,12 +110,15 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(ActiveEnemies(0))
+        .insert_resource(EnemiesLeft(100))
+        .insert_resource(LivesLeft(5))
         .add_plugins(DefaultPlugins)
         .add_plugin(PlayerPlugin)
         .add_plugin(EnemyPlugin)
         .add_startup_system(setup.system())
-        .add_startup_system(init_display_score.system())
-        .add_system(scoreboard_system.system())
+        .add_startup_system(init_ui.system())
+        .add_system(lives_left_system.system())
+        .add_system(enemies_left_system.system())
         .add_system(player_laser_hit_enemy.system())
         .add_system(enemy_laser_hit_player.system())
         .add_system(explosion_to_spawn.system())
@@ -144,9 +163,11 @@ fn setup(
 
 fn player_laser_hit_enemy(
     mut commands: Commands,
+    mut app_state: ResMut<State<AppState>>,
     laser_query: Query<(Entity, &Transform, &Sprite), With<PlayerLaser>>,
     enemy_query: Query<(Entity, &Transform, &Sprite), With<Enemy>>,
     mut active_enemies: ResMut<ActiveEnemies>,
+    mut enemies_left: ResMut<EnemiesLeft>,
 ) {
     let mut enemies_blasted: HashSet<Entity> = HashSet::new();
 
@@ -167,6 +188,12 @@ fn player_laser_hit_enemy(
                     commands.entity(enemy_entity).despawn();
                     active_enemies.0 -= 1;
 
+                    enemies_left.0 -= 1;
+                    if enemies_left.0 == 0 {
+                        // todo state for finished lvl/game
+                        app_state.set(AppState::Gameover).unwrap();
+                    }
+
                     // spawn explosion to spawn
                     commands
                         .spawn()
@@ -185,6 +212,8 @@ fn player_laser_hit_enemy(
 fn enemy_laser_hit_player(
     mut commands: Commands,
     mut player_state: ResMut<PlayerState>,
+    mut lives_left: ResMut<LivesLeft>,
+    mut app_state: ResMut<State<AppState>>,
     time: Res<Time>,
     laser_query: Query<(Entity, &Transform, &Sprite), With<EnemyLaser>>,
     player_query: Query<(Entity, &Transform, &Sprite), With<Player>>,
@@ -210,6 +239,11 @@ fn enemy_laser_hit_player(
                 player_state.shot(time.seconds_since_startup());
                 // remove the laser
                 commands.entity(laser_entity).despawn();
+
+                lives_left.0 -= 1;
+                if lives_left.0 == 0 {
+                    app_state.set(AppState::Gameover).unwrap();
+                }
 
                 // spawn the explosion to spawn entity
                 commands
@@ -268,61 +302,76 @@ fn animate_explosion(
     }
 }
 
-fn init_display_score(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn init_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn_bundle(UiCameraBundle::default());
 
-    // scoreboard
-    commands.spawn_bundle(TextBundle {
-        text: Text {
-            sections: vec![TextSection {
-                value: "Enemies left: 100".to_string(),
-                style: TextStyle {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 40.0,
-                    color: Color::rgb(0.5, 0.5, 1.0),
+    // enemies left text
+    commands
+        .spawn_bundle(TextBundle {
+            text: Text {
+                sections: vec![TextSection {
+                    value: "Enemies left: 100".to_string(),
+                    style: TextStyle {
+                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font_size: 40.0,
+                        color: Color::rgb(0.5, 0.5, 1.0),
+                    },
+                }],
+                ..Default::default()
+            },
+            style: Style {
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    top: Val::Px(5.0),
+                    left: Val::Px(5.0),
+                    ..Default::default()
                 },
-            }],
-            ..Default::default()
-        },
-        style: Style {
-            position_type: PositionType::Absolute,
-            position: Rect {
-                top: Val::Px(5.0),
-                left: Val::Px(5.0),
                 ..Default::default()
             },
             ..Default::default()
-        },
-        ..Default::default()
-    });
+        })
+        .insert(EnemiesLeftText);
 
-    // Lives left
-    //commands.spawn_bundle(TextBundle {
-    //text: Text {
-    //sections: vec![TextSection {
-    //value: "Lives left: 5".to_string(),
-    //style: TextStyle {
-    //font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-    //font_size: 30.0,
-    //color: Color::rgb(0.0, 0.0, 0.5),
-    //},
-    //}],
-    //..Default::default()
-    //},
-    //style: Style {
-    //position_type: PositionType::Absolute,
-    //position: Rect {
-    //bottom: Val::Px(5.0),
-    //right: Val::Px(5.0),
-    //..Default::default()
-    //},
-    //..Default::default()
-    //},
-    //..Default::default()
-    //});
+    // lives left lext
+    commands
+        .spawn_bundle(TextBundle {
+            text: Text {
+                sections: vec![TextSection {
+                    value: "Lives left: 5".to_string(),
+                    style: TextStyle {
+                        font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                        font_size: 30.0,
+                        color: Color::rgb(1.0, 1.0, 1.0),
+                    },
+                }],
+                ..Default::default()
+            },
+            style: Style {
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    bottom: Val::Px(5.0),
+                    right: Val::Px(5.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(LivesLeftText);
 }
 
-fn scoreboard_system(active_enemies: Res<ActiveEnemies>, mut query: Query<&mut Text>) {
-    let mut text = query.single_mut().unwrap();
-    text.sections[0].value = format!("Enemies left: {}", active_enemies.0);
+fn lives_left_system(
+    lives_left: Res<LivesLeft>,
+    mut lives_left_query: Query<&mut Text, With<LivesLeftText>>,
+) {
+    let mut lives_left_text = lives_left_query.single_mut().unwrap();
+    lives_left_text.sections[0].value = format!("Enemies left: {}", lives_left.0);
+}
+
+fn enemies_left_system(
+    enemies_left: Res<EnemiesLeft>,
+    mut enemies_left_query: Query<&mut Text, With<EnemiesLeftText>>,
+) {
+    let mut enemies_left_text = enemies_left_query.single_mut().unwrap();
+    enemies_left_text.sections[0].value = format!("Enemies left: {}", enemies_left.0);
 }
