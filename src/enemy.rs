@@ -1,6 +1,6 @@
 use crate::{
-    ActiveEnemies, Enemy, FromEnemy, Laser, Materials, PlayerState, Speed, WinSize, MAX_ENEMIES,
-    SCALE, TIME_STEP,
+    ActiveEnemies, Enemy, EnemyLaser, Materials, PlayerState, Speed, WinSize, MAX_ENEMIES, SCALE,
+    TIME_STEP,
 };
 use bevy::{core::FixedTimestep, prelude::*};
 
@@ -89,8 +89,7 @@ fn enemy_fire(
                 },
                 ..Default::default()
             })
-            .insert(Laser)
-            .insert(FromEnemy)
+            .insert(EnemyLaser)
             .insert(Speed::default());
     }
 }
@@ -98,7 +97,7 @@ fn enemy_fire(
 fn enemy_laser_movement(
     mut commands: Commands,
     win_size: Res<WinSize>,
-    mut laser_query: Query<(Entity, &Speed, &mut Transform), (With<Laser>, With<FromEnemy>)>,
+    mut laser_query: Query<(Entity, &Speed, &mut Transform), With<EnemyLaser>>,
 ) {
     for (entity, speed, mut tf) in laser_query.iter_mut() {
         tf.translation.y -= speed.0 * TIME_STEP;

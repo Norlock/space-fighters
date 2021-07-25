@@ -1,7 +1,7 @@
 use bevy::{core::FixedTimestep, prelude::*};
 
 use crate::{
-    FromPlayer, Laser, Materials, Player, PlayerReadyFire, PlayerState, Speed, WinSize,
+    Materials, Player, PlayerLaser, PlayerReadyFire, PlayerState, Speed, WinSize,
     PLAYER_RESPAWN_DELAY, SCALE, TIME_STEP,
 };
 
@@ -94,8 +94,7 @@ fn player_fire(
                         },
                         ..Default::default()
                     })
-                    .insert(Laser)
-                    .insert(FromPlayer)
+                    .insert(PlayerLaser)
                     .insert(Speed::default());
             };
 
@@ -115,7 +114,7 @@ fn player_fire(
 fn laser_movement(
     mut commands: Commands,
     win_size: Res<WinSize>,
-    mut query: Query<(Entity, &Speed, &mut Transform), (With<Laser>, With<FromPlayer>)>,
+    mut query: Query<(Entity, &Speed, &mut Transform), With<PlayerLaser>>,
 ) {
     for (laser_entity, speed, mut laser_tf) in query.iter_mut() {
         let translation = &mut laser_tf.translation;

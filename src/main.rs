@@ -66,12 +66,11 @@ impl PlayerState {
 
 struct Player;
 struct PlayerReadyFire(bool);
-struct FromPlayer;
 
-struct Laser;
+struct PlayerLaser;
+struct EnemyLaser;
 
 struct Enemy;
-struct FromEnemy;
 
 struct Explosion;
 struct ExplosionToSpawn(Vec3);
@@ -142,7 +141,7 @@ fn setup(
 
 fn player_laser_hit_enemy(
     mut commands: Commands,
-    laser_query: Query<(Entity, &Transform, &Sprite), (With<Laser>, With<FromPlayer>)>,
+    laser_query: Query<(Entity, &Transform, &Sprite), With<PlayerLaser>>,
     enemy_query: Query<(Entity, &Transform, &Sprite), With<Enemy>>,
     mut active_enemies: ResMut<ActiveEnemies>,
 ) {
@@ -184,7 +183,7 @@ fn enemy_laser_hit_player(
     mut commands: Commands,
     mut player_state: ResMut<PlayerState>,
     time: Res<Time>,
-    laser_query: Query<(Entity, &Transform, &Sprite), (With<Laser>, With<FromEnemy>)>,
+    laser_query: Query<(Entity, &Transform, &Sprite), With<EnemyLaser>>,
     player_query: Query<(Entity, &Transform, &Sprite), With<Player>>,
 ) {
     if let Ok((player_entity, player_tf, player_sprite)) = player_query.single() {
