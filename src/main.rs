@@ -1,7 +1,7 @@
 mod enemy;
 mod player;
 
-use bevy::{core::FixedTimestep, prelude::*, sprite::collide_aabb::collide};
+use bevy::{prelude::*, sprite::collide_aabb::collide};
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 use std::collections::HashSet;
@@ -16,6 +16,7 @@ const SCALE: f32 = 0.5;
 const TIME_STEP: f32 = 1. / 60.;
 const PLAYER_RESPAWN_DELAY: f64 = 2.;
 const MAX_ENEMIES: u32 = 20;
+const HORIZONTAL_MARGIN: f32 = 50.;
 
 // Entity, Component, System, Resource
 
@@ -116,7 +117,9 @@ fn setup(
     let window = windows.get_primary_mut().unwrap();
 
     // camera
-    let camera = OrthographicCameraBundle::new_2d();
+    let mut camera = OrthographicCameraBundle::new_2d();
+    camera.transform.translation.x = window.width() / 2.;
+    camera.transform.translation.y = window.height() / 2.;
     commands.spawn_bundle(camera);
 
     // create the main resources

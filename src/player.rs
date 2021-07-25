@@ -37,12 +37,11 @@ fn player_spawn(
 
     if !player_state.on && (last_shot == 0. || now > last_shot + PLAYER_RESPAWN_DELAY) {
         // spawn a sprite
-        let bottom = -win_size.height / 2.;
         commands
             .spawn_bundle(SpriteBundle {
                 material: materials.player.clone(),
                 transform: Transform {
-                    translation: Vec3::new(0., bottom + 75. / 4. + 5., 10.),
+                    translation: Vec3::new(win_size.width / 2., 25., 10.),
                     scale: Vec3::new(SCALE, SCALE, 1.),
                     ..Default::default()
                 },

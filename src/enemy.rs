@@ -1,6 +1,6 @@
 use crate::{
-    ActiveEnemies, Enemy, EnemyLaser, Materials, PlayerState, Speed, WinSize, MAX_ENEMIES, SCALE,
-    TIME_STEP,
+    ActiveEnemies, Enemy, EnemyLaser, Materials, PlayerState, Speed, WinSize, HORIZONTAL_MARGIN,
+    MAX_ENEMIES, SCALE, TIME_STEP,
 };
 use bevy::{core::FixedTimestep, prelude::*};
 
@@ -33,16 +33,14 @@ fn enemy_spawn(
         return;
     }
 
-    // compute the random position
-    let x = -(win_size.width / 2.) + 50.;
-    let y = (win_size.height / 2.) - 50.;
+    let y = win_size.height - 50.;
 
     // spawn enemy
     commands
         .spawn_bundle(SpriteBundle {
             material: materials.enemy.clone(),
             transform: Transform {
-                translation: Vec3::new(x, y, 10.),
+                translation: Vec3::new(HORIZONTAL_MARGIN, y, 10.),
                 scale: Vec3::new(SCALE, SCALE, 1.),
                 ..Default::default()
             },
@@ -56,10 +54,10 @@ fn enemy_spawn(
 
 fn enemy_movement(mut query: Query<(&Speed, &mut Transform), With<Enemy>>, win_size: Res<WinSize>) {
     for (speed, mut transform) in query.iter_mut() {
-        if transform.translation.x < win_size.width {
+        if transform.translation.x < win_size.width - HORIZONTAL_MARGIN {
             transform.translation.x += 0.3 * speed.0 * TIME_STEP;
         } else {
-            transform.translation.x = 0.;
+            transform.translation.x = HORIZONTAL_MARGIN;
             transform.translation.y -= 64.;
         }
     }
