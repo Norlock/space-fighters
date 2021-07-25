@@ -15,6 +15,7 @@ const EXPLOSION_SHEET: &str = "explo_a_sheet.png";
 const SCALE: f32 = 0.5;
 const TIME_STEP: f32 = 1. / 60.;
 const PLAYER_RESPAWN_DELAY: f64 = 2.;
+const MAX_ENEMIES: u32 = 20;
 
 // Entity, Component, System, Resource
 

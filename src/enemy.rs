@@ -1,4 +1,7 @@
-use crate::{ActiveEnemies, Enemy, FromEnemy, Laser, Materials, Speed, WinSize, SCALE, TIME_STEP};
+use crate::{
+    ActiveEnemies, Enemy, FromEnemy, Laser, Materials, PlayerState, Speed, WinSize, MAX_ENEMIES,
+    SCALE, TIME_STEP,
+};
 use bevy::{core::FixedTimestep, prelude::*};
 
 pub struct EnemyPlugin;
@@ -26,6 +29,10 @@ fn enemy_spawn(
     mut active_enemies: ResMut<ActiveEnemies>,
     materials: Res<Materials>,
 ) {
+    if MAX_ENEMIES <= active_enemies.0 {
+        return;
+    }
+
     // compute the random position
     let x = -(win_size.width / 2.) + 50.;
     let y = (win_size.height / 2.) - 50.;
@@ -61,8 +68,13 @@ fn enemy_movement(mut query: Query<(&Speed, &mut Transform), With<Enemy>>, win_s
 fn enemy_fire(
     mut commands: Commands,
     materials: Res<Materials>,
+    player_state: Res<PlayerState>,
     enemy_query: Query<&Transform, With<Enemy>>,
 ) {
+    if !player_state.on {
+        return;
+    }
+
     for &tf in enemy_query.iter() {
         let x = tf.translation.x;
         let y = tf.translation.y;
