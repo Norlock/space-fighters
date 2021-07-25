@@ -1,37 +1,59 @@
-use bevy::prelude::*;
+use bevy::{core::FixedTimestep, prelude::*};
 
-use crate::{Laser, Materials, Player, PlayerReadyFire, Speed, WinSize, SCALE, TIME_STEP};
+use crate::{
+    FromPlayer, Laser, Materials, Player, PlayerReadyFire, PlayerState, Speed, WinSize,
+    PLAYER_RESPAWN_DELAY, SCALE, TIME_STEP,
+};
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_stage(
-            "game_setup_actors",
-            SystemStage::single(player_spawn.system()),
-        )
-        .add_system(player_movement.system())
-        .add_system(player_fire.system())
-        .add_system(laser_movement.system());
+        app.insert_resource(PlayerState::default())
+            .add_startup_stage(
+                "game_setup_actors",
+                SystemStage::single(player_spawn.system()),
+            )
+            .add_system(player_movement.system())
+            .add_system(player_fire.system())
+            .add_system(laser_movement.system())
+            .add_system_set(
+                SystemSet::new()
+                    .with_run_criteria(FixedTimestep::step(0.5))
+                    .with_system(player_spawn.system()),
+            );
     }
 }
 
-fn player_spawn(mut commands: Commands, materials: Res<Materials>, win_size: Res<WinSize>) {
-    // spawn a sprite
-    let bottom = -win_size.height / 2.;
-    commands
-        .spawn_bundle(SpriteBundle {
-            material: materials.player.clone(),
-            transform: Transform {
-                translation: Vec3::new(0., bottom + 75. / 4. + 5., 10.),
-                scale: Vec3::new(SCALE, SCALE, 1.),
+fn player_spawn(
+    mut commands: Commands,
+    materials: Res<Materials>,
+    win_size: Res<WinSize>,
+    time: Res<Time>,
+    mut player_state: ResMut<PlayerState>,
+) {
+    let now = time.seconds_since_startup();
+    let last_shot = player_state.last_shot;
+
+    if !player_state.on && (last_shot == 0. || now > last_shot + PLAYER_RESPAWN_DELAY) {
+        // spawn a sprite
+        let bottom = -win_size.height / 2.;
+        commands
+            .spawn_bundle(SpriteBundle {
+                material: materials.player.clone(),
+                transform: Transform {
+                    translation: Vec3::new(0., bottom + 75. / 4. + 5., 10.),
+                    scale: Vec3::new(SCALE, SCALE, 1.),
+                    ..Default::default()
+                },
                 ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert(Player)
-        .insert(PlayerReadyFire(true))
-        .insert(Speed::default());
+            })
+            .insert(Player)
+            .insert(PlayerReadyFire(true))
+            .insert(Speed::default());
+
+        player_state.spawned();
+    }
 }
 
 fn player_movement(
@@ -64,7 +86,7 @@ fn player_fire(
             let mut spawn_lasers = |x_offset: f32| {
                 commands
                     .spawn_bundle(SpriteBundle {
-                        material: materials.laser.clone(),
+                        material: materials.player_laser.clone(),
                         transform: Transform {
                             translation: Vec3::new(x + x_offset, y + 15., 0.),
                             scale: Vec3::new(SCALE, SCALE, 1.),
@@ -73,6 +95,7 @@ fn player_fire(
                         ..Default::default()
                     })
                     .insert(Laser)
+                    .insert(FromPlayer)
                     .insert(Speed::default());
             };
 
@@ -92,7 +115,7 @@ fn player_fire(
 fn laser_movement(
     mut commands: Commands,
     win_size: Res<WinSize>,
-    mut query: Query<(Entity, &Speed, &mut Transform), With<Laser>>,
+    mut query: Query<(Entity, &Speed, &mut Transform), (With<Laser>, With<FromPlayer>)>,
 ) {
     for (laser_entity, speed, mut laser_tf) in query.iter_mut() {
         let translation = &mut laser_tf.translation;
