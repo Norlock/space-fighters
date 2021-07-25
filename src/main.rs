@@ -186,7 +186,6 @@ fn enemy_laser_hit_player(
     time: Res<Time>,
     laser_query: Query<(Entity, &Transform, &Sprite), (With<Laser>, With<FromEnemy>)>,
     player_query: Query<(Entity, &Transform, &Sprite), With<Player>>,
-    active_enemies: Res<ActiveEnemies>,
 ) {
     if let Ok((player_entity, player_tf, player_sprite)) = player_query.single() {
         let player_size = player_sprite.size * Vec2::from(player_tf.scale.abs());
@@ -273,24 +272,14 @@ fn init_display_score(mut commands: Commands, asset_server: Res<AssetServer>) {
     // scoreboard
     commands.spawn_bundle(TextBundle {
         text: Text {
-            sections: vec![
-                TextSection {
-                    value: "Enemies left: 100".to_string(),
-                    style: TextStyle {
-                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                        font_size: 40.0,
-                        color: Color::rgb(0.5, 0.5, 1.0),
-                    },
+            sections: vec![TextSection {
+                value: "Enemies left: 100".to_string(),
+                style: TextStyle {
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 40.0,
+                    color: Color::rgb(0.5, 0.5, 1.0),
                 },
-                TextSection {
-                    value: "".to_string(),
-                    style: TextStyle {
-                        font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                        font_size: 30.0,
-                        color: Color::rgb(1.0, 0.5, 0.5),
-                    },
-                },
-            ],
+            }],
             ..Default::default()
         },
         style: Style {
@@ -304,6 +293,31 @@ fn init_display_score(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         ..Default::default()
     });
+
+    // Lives left
+    //commands.spawn_bundle(TextBundle {
+    //text: Text {
+    //sections: vec![TextSection {
+    //value: "Lives left: 5".to_string(),
+    //style: TextStyle {
+    //font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+    //font_size: 30.0,
+    //color: Color::rgb(0.0, 0.0, 0.5),
+    //},
+    //}],
+    //..Default::default()
+    //},
+    //style: Style {
+    //position_type: PositionType::Absolute,
+    //position: Rect {
+    //bottom: Val::Px(5.0),
+    //right: Val::Px(5.0),
+    //..Default::default()
+    //},
+    //..Default::default()
+    //},
+    //..Default::default()
+    //});
 }
 
 fn scoreboard_system(active_enemies: Res<ActiveEnemies>, mut query: Query<&mut Text>) {
